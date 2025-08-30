@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake vs AI | TheGhostPacket</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4ade80;
+            --primary-dark: #22c55e;
+            --secondary: #1e293b;
+            --accent: #06b6d4;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --bg-hover: #334155;
+            --border: #334155;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --player-color: #4ade80;
+            --ai-color: #f59e0b;
+            --food-color: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #1a1a2e 100%);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .header {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 1.5rem 2rem;
+            text-align: center;
+        }
+
+        .header-title {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .header-subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .game-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 2rem;
+        }
+
+        .game-area {
+            background: var(--bg-card);
+            border-radius: 15px;
+            padding: 2rem;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .game-canvas {
+            border: 3px solid var(--border);
+            border-radius: 10px;
+            background: var(--bg-dark);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        }
+
+        .controls-panel {
+            background: var(--bg-card);
+            border-radius: 15px;
+            padding: 2rem;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .panel-section {
+            background: var(--bg-dark);
+            border-radius: 10px;
+            padding: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .game-status {
+            text-align: center;
+            margin: 1.5rem 0;
+        }
+
+        .status-text {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .status-ready { color: var(--success); }
+        .status-playing { color: var(--primary); }
+        .status-paused { color: var(--warning); }
+        .status-gameover { color: var(--danger); }
+
+        .score-display {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .score-card {
+            background: var(--bg-hover);
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .score-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .score-value {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .player-score { color: var(--player-color); }
+        .ai-score { color: var(--ai-color); }
+
+        .ai-difficulty {
+            margin-bottom: 1rem;
+        }
+
+        .difficulty-buttons {
+            display: grid;
+            gap: 0.5rem;
+        }
+
+        .difficulty-btn {
+            background: var(--bg-hover);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            padding: 0.75rem;
+            color: var(--text);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .difficulty-btn:hover {
+            border-color: var(--primary);
+            background: rgba(74, 222, 128, 0.1);
+        }
+
+        .difficulty-btn.active {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: var(--bg-dark);
+            font-weight: 600;
+        }
+
+        .game-controls {
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .control-btn {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border: none;
+            border-radius: 8px;
+            padding: 1rem;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(74, 222, 128, 0.3);
+        }
+
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .control-btn.secondary {
+            background: linear-gradient(135deg, var(--bg-hover), var(--secondary));
+        }
+
+        .keyboard-hints {
+            background: var(--bg-hover);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .hint-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+
+        .hint-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .key-badge {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .stats-display {
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+            background: var(--bg-hover);
+            border-radius: 6px;
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .stat-value {
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        .game-over-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .game-over-modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-card);
+            border-radius: 15px;
+            padding: 3rem;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            border: 1px solid var(--border);
+        }
+
+        .modal-title {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .winner { color: var(--success); }
+        .loser { color: var(--danger); }
+
+        .modal-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .modal-score {
+            text-align: center;
+        }
+
+        .modal-score-value {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .modal-score-label {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        /* Mobile Controls */
+        .mobile-controls {
+            display: none;
+            margin-top: 1rem;
+        }
+
+        .direction-pad {
+            display: grid;
+            grid-template-areas: 
+                ". up ."
+                "left . right"
+                ". down .";
+            gap: 0.5rem;
+            width: 150px;
+            margin: 0 auto;
+        }
+
+        .direction-btn {
+            background: var(--bg-hover);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            color: var(--text);
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .direction-btn:active {
+            background: var(--primary);
+            color: var(--bg-dark);
+            transform: scale(0.95);
+        }
+
+        .up { grid-area: up; }
+        .down { grid-area: down; }
+        .left { grid-area: left; }
+        .right { grid-area: right; }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .game-container {
+                grid-template-columns: 1fr;
+                padding: 1rem;
+            }
+
+            .game-canvas {
+                width: 100%;
+                max-width: 400px;
+                height: 400px;
+            }
+
+            .mobile-controls {
+                display: block;
+            }
+
+            .header {
+                padding: 1rem;
+            }
+
+            .header-title {
+                font-size: 2rem;
+            }
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .pulse {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes gameStart {
+            0% { opacity: 0; transform: scale(0.8); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .game-start {
+            animation: gameStart 0.5s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 class="header-title">🐍 Snake vs AI</h1>
+        <p class="header-subtitle">Challenge the intelligent opponent • Can you outsmart the algorithm?</p>
+    </div>
+
+    <div class="game-container">
+        <div class="game-area">
+            <div class="game-status">
+                <div class="status-text status-ready" id="gameStatus">Press START to begin the challenge</div>
+            </div>
+            
+            <canvas id="gameCanvas" class="game-canvas" width="600" height="600"></canvas>
+            
+            <!-- Mobile Controls -->
+            <div class="mobile-controls" id="mobileControls">
+                <h4 style="text-align: center; margin-bottom: 1rem; color: var(--text-muted);">Touch Controls</h4>
+                <div class="direction-pad">
+                    <button class="direction-btn up" data-direction="up">
+                        <i class="fas fa-chevron-up"></i>
+                    </button>
+                    <button class="direction-btn left" data-direction="left">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button class="direction-btn right" data-direction="right">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                    <button class="direction-btn down" data-direction="down">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls-panel">
+            <!-- Score Display -->
+            <div class="panel-section">
+                <div class="section-title">
+                    <i class="fas fa-trophy"></i>
+                    Score
+                </div>
+                <div class="score-display">
+                    <div class="score-card">
+                        <div class="score-label">You</div>
+                        <div class="score-value player-score" id="playerScore">0</div>
+                    </div>
+                    <div class="score-card">
+                        <div class="score-label">AI</div>
+                        <div class="score-value ai-score" id="aiScore">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Difficulty -->
+            <div class="panel-section">
+                <div class="section-title">
+                    <i class="fas fa-brain"></i>
+                    AI Difficulty
+                </div>
+                <div class="ai-difficulty">
+                    <div class="difficulty-buttons">
+                        <button class="difficulty-btn" data-difficulty="easy">
+                            🟢 Easy - Casual AI
+                        </button>
+                        <button class="difficulty-btn active" data-difficulty="medium">
+                            🟡 Medium - Smart AI
+                        </button>
+                        <button class="difficulty-btn" data-difficulty="hard">
+                            🔴 Hard - Expert AI
+                        </button>
+                        <button class="difficulty-btn" data-difficulty="impossible">
+                            ⚫ Impossible - Perfect AI
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Controls -->
+            <div class="panel-section">
+                <div class="section-title">
+                    <i class="fas fa-gamepad"></i>
+                    Controls
+                </div>
+                <div class="game-controls">
+                    <button class="control-btn" id="startBtn" onclick="startGame()">
+                        <i class="fas fa-play"></i>
+                        Start Game
+                    </button>
+                    <button class="control-btn secondary" id="pauseBtn" onclick="pauseGame()" disabled>
+                        <i class="fas fa-pause"></i>
+                        Pause
+                    </button>
+                    <button class="control-btn secondary" onclick="resetGame()">
+                        <i class="fas fa-redo"></i>
+                        New Game
+                    </button>
+                </div>
+            </div>
+
+            <!-- Keyboard Hints -->
+            <div class="panel-section">
+                <div class="section-title">
+                    <i class="fas fa-keyboard"></i>
+                    Controls
+                </div>
+                <div class="keyboard-hints">
+                    <div class="hint-grid">
+                        <div class="hint-item">
+                            <span class="key-badge">↑</span>
+                            <span>Move Up</span>
+                        </div>
+                        <div class="hint-item">
+                            <span class="key-badge">↓</span>
+                            <span>Move Down</span>
+                        </div>
+                        <div class="hint-item">
+                            <span class="key-badge">←</span>
+                            <span>Move Left</span>
+                        </div>
+                        <div class="hint-item">
+                            <span class="key-badge">→</span>
+                            <span>Move Right</span>
+                        </div>
+                        <div class="hint-item">
+                            <span class="key-badge">SPACE</span>
+                            <span>Pause</span>
+                        </div>
+                        <div class="hint-item">
+                            <span class="key-badge">R</span>
+                            <span>Restart</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Statistics -->
+            <div class="panel-section">
+                <div class="section-title">
+                    <i class="fas fa-chart-line"></i>
+                    Stats
+                </div>
+                <div class="stats-display">
+                    <div class="stat-item">
+                        <span class="stat-label">Game Time</span>
+                        <span class="stat-value" id="gameTime">00:00</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Player Length</span>
+                        <span class="stat-value" id="playerLength">3</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">AI Length</span>
+                        <span class="stat-value" id="aiLength">3</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Food Eaten</span>
+                        <span class="stat-value" id="foodEaten">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div class="game-over-modal" id="gameOverModal">
+        <div class="modal-content">
+            <h2 class="modal-title" id="modalTitle">Game Over!</h2>
+            <div class="modal-stats">
+                <div class="modal-score">
+                    <div class="modal-score-value player-score" id="modalPlayerScore">0</div>
+                    <div class="modal-score-label">Your Score</div>
+                </div>
+                <div class="modal-score">
+                    <div class="modal-score-value ai-score" id="modalAiScore">0</div>
+                    <div class="modal-score-label">AI Score</div>
+                </div>
+            </div>
+            <div style="margin: 2rem 0;">
+                <p id="modalMessage" style="font-size: 1.2rem; color: var(--text-muted);"></p>
+            </div>
+            <button class="control-btn" onclick="closeModal(); resetGame();">
+                <i class="fas fa-redo"></i>
+                Play Again
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Game Configuration
+        const GRID_SIZE = 20;
+        const CANVAS_SIZE = 600;
+        const INITIAL_SPEED = 150; // ms between moves
+        
+        // Game State
+        let gameState = {
+            isRunning: false,
+            isPaused: false,
+            gameStartTime: null,
+            lastMoveTime: 0,
+            currentSpeed: INITIAL_SPEED,
+            difficulty: 'medium',
+            playerScore: 0,
+            aiScore: 0,
+            foodEaten: 0
+        };
+
+        // Game Objects
+        let player, ai, food, canvas, ctx;
+
+        // Snake Class
+        class Snake {
+            constructor(x, y, color, isAI = false) {
+                this.body = [{ x, y }];
+                this.direction = { x: 1, y: 0 };
+                this.color = color;
+                this.isAI = isAI;
+                this.score = 0;
+                this.lastDirection = { x: 1, y: 0 };
+            }
+
+            move() {
+                const head = { ...this.body[0] };
+                head.x += this.direction.x;
+                head.y += this.direction.y;
+
+                // Wrap around edges
+                if (head.x < 0) head.x = (CANVAS_SIZE / GRID_SIZE) - 1;
+                if (head.x >= CANVAS_SIZE / GRID_SIZE) head.x = 0;
+                if (head.y < 0) head.y = (CANVAS_SIZE / GRID_SIZE) - 1;
+                if (head.y >= CANVAS_SIZE / GRID_SIZE) head.y = 0;
+
+                this.body.unshift(head);
+                this.lastDirection = { ...this.direction };
+            }
+
+            grow() {
+                this.score += 10;
+                // Don't remove tail when growing
+            }
+
+            removeTail() {
+                this.body.pop();
+            }
+
+            checkSelfCollision() {
+                const head = this.body[0];
+                return this.body.slice(1).some(segment => 
+                    segment.x === head.x && segment.y === head.y
+                );
+            }
+
+            checkCollisionWith(otherSnake) {
+                const head = this.body[0];
+                return otherSnake.body.some(segment =>
+                    segment.x === head.x && segment.y === head.y
+                );
+            }
+
+            setDirection(newDirection) {
+                // Prevent reversing into self
+                if (this.lastDirection.x !== -newDirection.x || 
+                    this.lastDirection.y !== -newDirection.y) {
+                    this.direction = newDirection;
+                }
+            }
+
+            draw(ctx) {
+                ctx.fillStyle = this.color;
+                this.body.forEach((segment, index) => {
+                    const alpha = index === 0 ? 1 : Math.max(0.3, 1 - (index * 0.1));
+                    ctx.globalAlpha = alpha;
+                    
+                    ctx.fillRect(
+                        segment.x * GRID_SIZE + 1,
+                        segment.y * GRID_SIZE + 1,
+                        GRID_SIZE - 2,
+                        GRID_SIZE - 2
+                    );
+                    
+                    // Add eyes to head
+                    if (index === 0) {
+                        ctx.fillStyle = '#000';
+                        ctx.globalAlpha = 1;
+                        const eyeSize = 3;
+                        const eyeOffset = 6;
+                        
+                        if (this.direction.x === 1) { // Moving right
+                            ctx.fillRect(segment.x * GRID_SIZE + eyeOffset, segment.y * GRID_SIZE + 4, eyeSize, eyeSize);
+                            ctx.fillRect(segment.x * GRID_SIZE + eyeOffset, segment.y * GRID_SIZE + 12, eyeSize, eyeSize);
+                        } else if (this.direction.x === -1) { // Moving left
+                            ctx.fillRect(segment.x * GRID_SIZE + 4, segment.y * GRID_SIZE + 4, eyeSize, eyeSize);
+                            ctx.fillRect(segment.x * GRID_SIZE + 4, segment.y * GRID_SIZE + 12, eyeSize, eyeSize);
+                        } else if (this.direction.y === -1) { // Moving up
+                            ctx.fillRect(segment.x * GRID_SIZE + 4, segment.y * GRID_SIZE + 4, eyeSize, eyeSize);
+                            ctx.fillRect(segment.x * GRID_SIZE + 12, segment.y * GRID_SIZE + 4, eyeSize, eyeSize);
+                        } else { // Moving down
+                            ctx.fillRect(segment.x * GRID_SIZE + 4, segment.y * GRID_SIZE + 12, eyeSize, eyeSize);
+                            ctx.fillRect(segment.x * GRID_SIZE + 12, segment.y * GRID_SIZE + 12, eyeSize, eyeSize);
+                        }
+                        ctx.fillStyle = this.color;
+                    }
+                });
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        // AI Brain
+        class AIBrain {
+            constructor(snake, difficulty) {
+                this.snake = snake;
+                this.difficulty = difficulty;
+            }
+
+            getNextMove(food, playerSnake) {
+                const head = this.snake.body[0];
+                const directions = [
+                    { x: 0, y: -1, name: 'up' },    // Up
+                    { x: 1, y: 0, name: 'right' },  // Right
+                    { x: 0, y: 1, name: 'down' },   // Down
+                    { x: -1, y: 0, name: 'left' }   // Left
+                ];
+
+                // Calculate safety and desirability for each direction
+                const moves = directions.map(dir => {
+                    const newPos = {
+                        x: (head.x + dir.x + (CANVAS_SIZE / GRID_SIZE)) % (CANVAS_SIZE / GRID_SIZE),
+                        y: (head.y + dir.y + (CANVAS_SIZE / GRID_SIZE)) % (CANVAS_SIZE / GRID_SIZE)
+                    };
+
+                    let score = 0;
+                    let safe = true;
+
+                    // Check if move is safe (not into self)
+                    if (this.snake.body.slice(1).some(segment => 
+                        segment.x === newPos.x && segment.y === newPos.y)) {
+                        safe = false;
+                        score -= 1000;
+                    }
+
+                    // Check collision with player snake
+                    if (playerSnake.body.some(segment =>
+                        segment.x === newPos.x && segment.y === newPos.y)) {
+                        safe = false;
+                        score -= 1000;
+                    }
+
+                    // Prefer moves toward food
+                    const foodDistance = Math.abs(newPos.x - food.x) + Math.abs(newPos.y - food.y);
+                    score -= foodDistance * 10;
+
+                    // Add some space analysis based on difficulty
+                    if (this.difficulty !== 'easy') {
+                        score += this.analyzeSpace(newPos, playerSnake) * 5;
+                    }
+
+                    // Avoid getting too close to player snake head
+                    if (this.difficulty === 'hard' || this.difficulty === 'impossible') {
+                        const playerHead = playerSnake.body[0];
+                        const playerDistance = Math.abs(newPos.x - playerHead.x) + Math.abs(newPos.y - playerHead.y);
+                        if (playerDistance < 3) {
+                            score -= 50;
+                        }
+                    }
+
+                    return { direction: dir, score, safe, position: newPos };
+                });
+
+                // Filter safe moves
+                let safeMoves = moves.filter(move => move.safe);
+                
+                if (safeMoves.length === 0) {
+                    // No safe moves, pick least dangerous
+                    safeMoves = moves;
+                }
+
+                // Difficulty-based decision making
+                let chosenMove;
+                switch (this.difficulty) {
+                    case 'easy':
+                        // 30% chance of random move, 70% optimal
+                        if (Math.random() < 0.3) {
+                            chosenMove = safeMoves[Math.floor(Math.random() * safeMoves.length)];
+                        } else {
+                            chosenMove = safeMoves.reduce((best, current) => 
+                                current.score > best.score ? current : best
+                            );
+                        }
+                        break;
+                        
+                    case 'medium':
+                        // 15% chance of random move, 85% optimal
+                        if (Math.random() < 0.15) {
+                            chosenMove = safeMoves[Math.floor(Math.random() * safeMoves.length)];
+                        } else {
+                            chosenMove = safeMoves.reduce((best, current) => 
+                                current.score > best.score ? current : best
+                            );
+                        }
+                        break;
+                        
+                    case 'hard':
+                        // 5% chance of random move, 95% optimal
+                        if (Math.random() < 0.05) {
+                            chosenMove = safeMoves[Math.floor(Math.random() * safeMoves.length)];
+                        } else {
+                            chosenMove = safeMoves.reduce((best, current) => 
+                                current.score > best.score ? current : best
+                            );
+                        }
+                        break;
+                        
+                    case 'impossible':
+                        // Always optimal move
+                        chosenMove = safeMoves.reduce((best, current) => 
+                            current.score > best.score ? current : best
+                        );
+                        break;
+                }
+
+                return chosenMove.direction;
+            }
+
+            analyzeSpace(position, playerSnake) {
+                // Simple flood fill to estimate available space
+                let spaceScore = 0;
+                const visited = new Set();
+                const queue = [position];
+                
+                for (let i = 0; i < 20 && queue.length > 0; i++) { // Limit iterations for performance
+                    const pos = queue.shift();
+                    const key = `${pos.x},${pos.y}`;
+                    
+                    if (visited.has(key)) continue;
+                    visited.add(key);
+                    
+                    // Check if position is blocked
+                    const blocked = this.snake.body.some(segment =>
+                        segment.x === pos.x && segment.y === pos.y
+                    ) || playerSnake.body.some(segment =>
+                        segment.x === pos.x && segment.y === pos.y
+                    );
+                    
+                    if (!blocked) {
+                        spaceScore++;
+                        
+                        // Add adjacent positions to queue
+                        const adjacent = [
+                            { x: (pos.x + 1) % (CANVAS_SIZE / GRID_SIZE), y: pos.y },
+                            { x: (pos.x - 1 + (CANVAS_SIZE / GRID_SIZE)) % (CANVAS_SIZE / GRID_SIZE), y: pos.y },
+                            { x: pos.x, y: (pos.y + 1) % (CANVAS_SIZE / GRID_SIZE) },
+                            { x: pos.x, y: (pos.y - 1 + (CANVAS_SIZE / GRID_SIZE)) % (CANVAS_SIZE / GRID_SIZE) }
+                        ];
+                        
+                        queue.push(...adjacent);
+                    }
+                }
+                
+                return spaceScore;
+            }
+        }
+
+        // Food Class
+        class Food {
+            constructor() {
+                this.respawn();
+            }
+
+            respawn() {
+                const gridWidth = CANVAS_SIZE / GRID_SIZE;
+                const gridHeight = CANVAS_SIZE / GRID_SIZE;
+                
+                do {
+                    this.x = Math.floor(Math.random() * gridWidth);
+                    this.y = Math.floor(Math.random() * gridHeight);
+                } while (this.isOnSnake(player) || this.isOnSnake(ai));
+            }
+
+            isOnSnake(snake) {
+                return snake && snake.body.some(segment =>
+                    segment.x === this.x && segment.y === this.y
+                );
+            }
+
+            draw(ctx) {
+                ctx.fillStyle = getComputedStyle(document.documentElement)
+                    .getPropertyValue('--food-color');
+                
+                // Draw food as a circle
+                ctx.beginPath();
+                ctx.arc(
+                    this.x * GRID_SIZE + GRID_SIZE / 2,
+                    this.y * GRID_SIZE + GRID_SIZE / 2,
+                    GRID_SIZE / 2 - 2,
+                    0,
+                    2 * Math.PI
+                );
+                ctx.fill();
+                
+                // Add shine effect
+                ctx.fillStyle = '#ffffff';
+                ctx.globalAlpha = 0.6;
+                ctx.beginPath();
+                ctx.arc(
+                    this.x * GRID_SIZE + GRID_SIZE / 3,
+                    this.y * GRID_SIZE + GRID_SIZE / 3,
+                    3,
+                    0,
+                    2 * Math.PI
+                );
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        // Game Initialization
+        function initGame() {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            
+            // Create game objects
+            player = new Snake(5, 15, getComputedStyle(document.documentElement)
+                .getPropertyValue('--player-color'));
+            ai = new Snake(25, 15, getComputedStyle(document.documentElement)
+                .getPropertyValue('--ai-color'), true);
+            ai.brain = new AIBrain(ai, gameState.difficulty);
+            food = new Food();
+            
+            setupEventListeners();
+            updateDisplay();
+        }
+
+        // Event Listeners
+        function setupEventListeners() {
+            // Keyboard controls
+            document.addEventListener('keydown', handleKeyPress);
+            
+            // Mobile controls
+            document.querySelectorAll('.direction-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const direction = btn.dataset.direction;
+                    handleMobileControl(direction);
+                });
+            });
+            
+            // Difficulty buttons
+            document.querySelectorAll('.difficulty-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (!gameState.isRunning) {
+                        setDifficulty(btn.dataset.difficulty);
+                    }
+                });
+            });
+        }
+
+        function handleKeyPress(event) {
+            if (!gameState.isRunning && event.code !== 'Space' && event.key !== 'r') return;
+            
+            switch(event.code) {
+                case 'ArrowUp':
+                case 'KeyW':
+                    event.preventDefault();
+                    player.setDirection({ x: 0, y: -1 });
+                    break;
+                case 'ArrowDown':
+                case 'KeyS':
+                    event.preventDefault();
+                    player.setDirection({ x: 0, y: 1 });
+                    break;
+                case 'ArrowLeft':
+                case 'KeyA':
+                    event.preventDefault();
+                    player.setDirection({ x: -1, y: 0 });
+                    break;
+                case 'ArrowRight':
+                case 'KeyD':
+                    event.preventDefault();
+                    player.setDirection({ x: 1, y: 0 });
+                    break;
+                case 'Space':
+                    event.preventDefault();
+                    pauseGame();
+                    break;
+                case 'KeyR':
+                    event.preventDefault();
+                    resetGame();
+                    break;
+            }
+        }
+
+        function handleMobileControl(direction) {
+            if (!gameState.isRunning) return;
+            
+            const directions = {
+                'up': { x: 0, y: -1 },
+                'down': { x: 0, y: 1 },
+                'left': { x: -1, y: 0 },
+                'right': { x: 1, y: 0 }
+            };
+            
+            if (directions[direction]) {
+                player.setDirection(directions[direction]);
+            }
+        }
+
+        function setDifficulty(difficulty) {
+            gameState.difficulty = difficulty;
+            
+            // Update AI brain
+            if (ai && ai.brain) {
+                ai.brain.difficulty = difficulty;
+            }
+            
+            // Update UI
+            document.querySelectorAll('.difficulty-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.difficulty === difficulty);
+            });
+            
+            // Adjust game speed based on difficulty
+            const speedMultipliers = {
+                easy: 1.2,
+                medium: 1.0,
+                hard: 0.9,
+                impossible: 0.8
+            };
+            gameState.currentSpeed = INITIAL_SPEED * speedMultipliers[difficulty];
+        }
+
+        // Game Control Functions
+        function startGame() {
+            if (gameState.isRunning) return;
+            
+            gameState.isRunning = true;
+            gameState.isPaused = false;
+            gameState.gameStartTime = Date.now();
+            gameState.lastMoveTime = Date.now();
+            
+            updateUI();
+            updateStatus('Playing - Outsmart the AI!', 'playing');
+            
+            document.getElementById('gameCanvas').classList.add('game-start');
+            
+            gameLoop();
+        }
+
+        function pauseGame() {
+            if (!gameState.isRunning) return;
+            
+            gameState.isPaused = !gameState.isPaused;
+            
+            if (gameState.isPaused) {
+                updateStatus('Game Paused', 'paused');
+            } else {
+                updateStatus('Game Resumed', 'playing');
+                gameState.lastMoveTime = Date.now(); // Reset timing
+                gameLoop();
+            }
+            
+            updateUI();
+        }
+
+        function resetGame() {
+            gameState.isRunning = false;
+            gameState.isPaused = false;
+            gameState.gameStartTime = null;
+            gameState.playerScore = 0;
+            gameState.aiScore = 0;
+            gameState.foodEaten = 0;
+            
+            // Reset game objects
+            player = new Snake(5, 15, getComputedStyle(document.documentElement)
+                .getPropertyValue('--player-color'));
+            ai = new Snake(25, 15, getComputedStyle(document.documentElement)
+                .getPropertyValue('--ai-color'), true);
+            ai.brain = new AIBrain(ai, gameState.difficulty);
+            food = new Food();
+            
+            updateStatus('Press START to begin the challenge', 'ready');
+            updateUI();
+            updateDisplay();
+            draw();
+        }
+
+        // Game Loop
+        function gameLoop() {
+            if (!gameState.isRunning || gameState.isPaused) return;
+            
+            const currentTime = Date.now();
+            
+            if (currentTime - gameState.lastMoveTime > gameState.currentSpeed) {
+                update();
+                gameState.lastMoveTime = currentTime;
+            }
+            
+            draw();
+            updateDisplay();
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        function update() {
+            // AI decides its next move
+            const aiMove = ai.brain.getNextMove(food, player);
+            ai.setDirection(aiMove);
+            
+            // Move both snakes
+            player.move();
+            ai.move();
+            
+            // Check food collision
+            let playerAteFood = false;
+            let aiAteFood = false;
+            
+            if (player.body[0].x === food.x && player.body[0].y === food.y) {
+                player.grow();
+                gameState.playerScore = player.score;
+                gameState.foodEaten++;
+                playerAteFood = true;
+            }
+            
+            if (ai.body[0].x === food.x && ai.body[0].y === food.y) {
+                ai.grow();
+                gameState.aiScore = ai.score;
+                gameState.foodEaten++;
+                aiAteFood = true;
+            }
+            
+            if (playerAteFood || aiAteFood) {
+                food.respawn();
+            } else {
+                // Remove tail if no food eaten
+                player.removeTail();
+                ai.removeTail();
+            }
+            
+            // Check collisions
+            const playerSelfCollision = player.checkSelfCollision();
+            const aiSelfCollision = ai.checkSelfCollision();
+            const playersCollide = player.checkCollisionWith(ai) || ai.checkCollisionWith(player);
+            
+            if (playerSelfCollision || aiSelfCollision || playersCollide) {
+                endGame(playerSelfCollision, aiSelfCollision, playersCollide);
+            }
+        }
+
+        function draw() {
+            // Clear canvas
+            ctx.fillStyle = getComputedStyle(document.documentElement)
+                .getPropertyValue('--bg-dark');
+            ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+            
+            // Draw grid (subtle)
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.lineWidth = 1;
+            
+            for (let i = 0; i <= CANVAS_SIZE; i += GRID_SIZE) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, CANVAS_SIZE);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(CANVAS_SIZE, i);
+                ctx.stroke();
+            }
+            
+            // Draw game objects
+            if (food) food.draw(ctx);
+            if (player) player.draw(ctx);
+            if (ai) ai.draw(ctx);
+        }
+
+        function endGame(playerSelfCollision, aiSelfCollision, playersCollide) {
+            gameState.isRunning = false;
+            
+            let winner, message;
+            
+            if (playersCollide) {
+                if (gameState.playerScore > gameState.aiScore) {
+                    winner = 'player';
+                    message = 'Head-on collision! You win by score!';
+                } else if (gameState.aiScore > gameState.playerScore) {
+                    winner = 'ai';
+                    message = 'Head-on collision! AI wins by score!';
+                } else {
+                    winner = 'tie';
+                    message = 'Head-on collision! It\'s a tie!';
+                }
+            } else if (playerSelfCollision && aiSelfCollision) {
+                winner = 'tie';
+                message = 'Both snakes crashed! It\'s a tie!';
+            } else if (playerSelfCollision) {
+                winner = 'ai';
+                message = 'You crashed into yourself! AI wins!';
+            } else if (aiSelfCollision) {
+                winner = 'player';
+                message = 'AI crashed! You win!';
+            }
+            
+            showGameOverModal(winner, message);
+        }
+
+        function showGameOverModal(winner, message) {
+            const modal = document.getElementById('gameOverModal');
+            const title = document.getElementById('modalTitle');
+            const playerScore = document.getElementById('modalPlayerScore');
+            const aiScore = document.getElementById('modalAiScore');
+            const modalMessage = document.getElementById('modalMessage');
+            
+            playerScore.textContent = gameState.playerScore;
+            aiScore.textContent = gameState.aiScore;
+            modalMessage.textContent = message;
+            
+            if (winner === 'player') {
+                title.textContent = '🎉 You Win!';
+                title.className = 'modal-title winner';
+            } else if (winner === 'ai') {
+                title.textContent = '🤖 AI Wins!';
+                title.className = 'modal-title loser';
+            } else {
+                title.textContent = '🤝 It\'s a Tie!';
+                title.className = 'modal-title';
+            }
+            
+            modal.classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('gameOverModal').classList.remove('show');
+        }
+
+        // UI Update Functions
+        function updateStatus(text, status) {
+            const statusElement = document.getElementById('gameStatus');
+            statusElement.textContent = text;
+            statusElement.className = `status-text status-${status}`;
+        }
+
+        function updateUI() {
+            const startBtn = document.getElementById('startBtn');
+            const pauseBtn = document.getElementById('pauseBtn');
+            
+            startBtn.disabled = gameState.isRunning;
+            pauseBtn.disabled = !gameState.isRunning;
+            
+            if (gameState.isPaused) {
+                pauseBtn.innerHTML = '<i class="fas fa-play"></i> Resume';
+            } else {
+                pauseBtn.innerHTML = '<i class="fas fa-pause"></i> Pause';
+            }
+            
+            // Disable difficulty change during game
+            document.querySelectorAll('.difficulty-btn').forEach(btn => {
+                btn.style.opacity = gameState.isRunning ? '0.5' : '1';
+                btn.style.pointerEvents = gameState.isRunning ? 'none' : 'auto';
+            });
+        }
+
+        function updateDisplay() {
+            document.getElementById('playerScore').textContent = gameState.playerScore;
+            document.getElementById('aiScore').textContent = gameState.aiScore;
+            
+            if (player) {
+                document.getElementById('playerLength').textContent = player.body.length;
+            }
+            if (ai) {
+                document.getElementById('aiLength').textContent = ai.body.length;
+            }
+            
+            document.getElementById('foodEaten').textContent = gameState.foodEaten;
+            
+            // Update game time
+            if (gameState.gameStartTime) {
+                const elapsed = Math.floor((Date.now() - gameState.gameStartTime) / 1000);
+                const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
+                const seconds = (elapsed % 60).toString().padStart(2, '0');
+                document.getElementById('gameTime').textContent = `${minutes}:${seconds}`;
+            }
+        }
+
+        // Initialize game when page loads
+        document.addEventListener('DOMContentLoaded', initGame);
+
+        // Close modal when clicking outside
+        document.getElementById('gameOverModal').addEventListener('click', function(event) {
+            if (event.target === this) {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>
