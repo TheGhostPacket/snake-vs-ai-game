@@ -2,7 +2,6 @@
 
 A modern, browser-based Snake game where you compete against an intelligent AI opponent. Built with vanilla JavaScript, HTML5 Canvas, and CSS3.
 
-![Game Preview](preview.png)
 
 ## 🎮 Play Now
 
